@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>王者荣耀-共享地图</title>
+    <link rel="stylesheet" href="layui/css/layui.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #1a6fdf;
+            --color-secondary: #ff5722;
+            --color-dark: #1e2330;
+            --color-darker: #171a24;
+            --color-light: #f5f5f5;
+            --color-red: #e74c3c;
+            --color-blue: #3498db;
+            --color-gold: #f1c40f;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            background: linear-gradient(135deg, var(--color-darker) 0%, var(--color-dark) 100%);
+            padding: 0 10px;
+            font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+            color: var(--color-light);
+            min-height: 100vh;
+        }
+        
+      #myCanvas {
+    width: 100%;
+    height: auto;
+    display: block;
+
+    background: url('map.png') no-repeat center center;
+    background-size: contain;
+
+    border-radius: 8px;
+}
+        .main-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .content-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .map-column {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .panel-column {
+            width: 300px;
+        }
+        
+        .panel {
+            background: rgba(30, 35, 48, 0.8);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            background: linear-gradient(90deg, rgba(26, 111, 223, 0.7) 0%, rgba(22, 160, 133, 0.7) 100%);
+            color: white;
+            padding: 12px 15px;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-body {
+            padding: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .panel-body::-webkit-scrollbar {
+            width: 5px;
+        }
+        
+        .panel-body::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border-radius: 5px;
+        }
+        
+        .hero-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .hero-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .hero-item.red {
+            border-left: 3px solid var(--color-red);
+        }
+        
+        .hero-item.blue {
+            border-left: 3px solid var(--color-blue);
+        }
+        
+        .hero-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+            border: 2px solid transparent;
+        }
+        
+        .hero-avatar.red {
+            border-color: var(--color-red);
+        }
+        
+        .hero-avatar.blue {
+            border-color: var(--color-blue);
+        }
+        
+        .hero-info {
+            flex: 1;
+        }
+        
+        .hero-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .hero-skills {
+            display: flex;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .hero-skill {
+            margin-right: 10px;
+        }
+        
+        .skill-cd {
+            color: var(--color-gold);
+            font-weight: bold;
+        }
+        
+        .room-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .room-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .room-item.active {
+            background: linear-gradient(90deg, rgba(26, 111, 223, 0.3) 0%, rgba(22, 160, 133, 0.3) 100%);
+            border-left: 3px solid var(--color-primary);
+        }
+        
+        .room-name {
+            font-weight: 500;
+        }
+        
+        .status {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .btn {
+            background: linear-gradient(90deg, var(--color-primary) 0%, #22a6b3 100%);
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--color-primary);
+        }
+        
+        .copyright {
+            text-align: center;
+            padding: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        
+        .game-title {
+            text-align: center;
+            margin-bottom: 20px;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .game-title h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            background: linear-gradient(90deg, #f9d423 0%, #ff4e50 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .game-title p {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
+        @media only screen and (max-width: 768px) {
+            .content-row {
+                flex-direction: column;
+            }
+            
+            .panel-column {
+                width: 100%;
+            }
+            
+            #myCanvas {
+                width: 100%;
+               
+            }
+        }
+        
+        /* 游戏内绘制样式 */
+        var 血条背景颜色 = "rgba(255, 255, 255, 0.3)";
+        var 野怪颜色 = "#f1c40f";
+        var 红方头像边框颜色 = "#e74c3c";
+        var 蓝方头像边框颜色 = "#e74c3c";
+        var 红方血条颜色 = "#e74c3c";
+        var 蓝方血条颜色 = "#e74c3c";
+        var 红方兵线颜色 = "#e74c3c";
+        var 蓝方兵线颜色 = "#e74c3c";
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="game-title">
+            <h1>王者荣耀共享地图</h1>
+            <p>花有重开日，人无再少年。</p>
+        </div>
+        
+        <div class="content-row">
+            <div class="map-column">
+                <div class="panel">
+                    <div class="canvas-container">
+                        <canvas id="myCanvas" width="340" height="340"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel-column">
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>英雄信息</span>
+                        <button class="btn btn-outline" id="showThis" onclick="showThisFunction()">敌方</button>
+                    </div>
+                    <div class="panel-body" id="heroList"></div>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-header">
+                        <span>房间列表</span>
+                        <span class="status" id="homeText">服务器连接中...</span>
+                    </div>
+                    <div class="panel-body" id="homeList">
+                        <div class="room-item">
+                            <div class="room-name">正在加载房间列表...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="copyright">
+                    <p>©  注意演戏. .</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="layui/layui.js" charset="utf-8"></script>
+    <script type="text/javascript">
+        document.onkeydown = function () {    
+            if (window.event && window.event.keyCode == 123) {    
+                window.event.returnValue = false;    
+            }    
+        }
+        var timestamp = new Date().getTime();
+        var ip = '47.99.115.124:8888';
+        var socket;
+        var homeId="";
+        var gameDataTime=20;
+        var showThisData=0;
+        var mapImageRotate=0;
+        const homeText = document.getElementById("homeText");
+        const homeList = document.getElementById("homeList");
+        const heroList = document.getElementById("heroList");
+        const showThis = document.getElementById("showThis");
+        const canvas = document.getElementById("myCanvas");
+      // =======================
+// 坐标系统核心配置
+// =======================
+
+// 游戏原始坐标系（非常关键）
+const ORIGINAL_CANVAS_SIZE = 340;
+
+// canvas 与原始坐标的缩放比例
+let scaleX = 1;
+let scaleY = 1;
+
+// 地图图片
+const mapImage = new Image();
+mapImage.src = "map.png";  
+        
+    mapImage.onload = function () {
+
+    const mapWidth = mapImage.naturalWidth;
+    const mapHeight = mapImage.naturalHeight;
+
+    // radar / canvas 容器
+    const radar = document.querySelector(".radar") 
+               || document.querySelector(".canvas-container")
+               || canvas.parentElement;
+
+    const maxWidth  = radar.clientWidth;
+    const maxHeight = window.innerHeight * 0.75;
+
+    let canvasWidth, canvasHeight;
+
+    // 按 map.png 比例计算 canvas 尺寸
+    if (mapWidth / mapHeight > maxWidth / maxHeight) {
+        canvasWidth  = maxWidth;
+        canvasHeight = maxWidth * mapHeight / mapWidth;
+    } else {
+        canvasHeight = maxHeight;
+        canvasWidth  = maxHeight * mapWidth / mapHeight;
+    }
+
+    // ⭐ 设置 canvas 的“真实尺寸”（不是 CSS）
+    canvas.width  = canvasWidth;
+    canvas.height = canvasHeight;
+
+    // ⭐ 计算坐标映射比例（最关键）
+    scaleX = canvasWidth  / ORIGINAL_CANVAS_SIZE;
+    scaleY = canvasHeight / ORIGINAL_CANVAS_SIZE;
+
+    console.log("canvas:", canvasWidth, canvasHeight);
+    console.log("scale:", scaleX, scaleY);
+};    
+        const context = canvas.getContext("2d");
+        var 血条背景颜色="rgba(255, 255, 255, 0.3)";
+        var 野怪颜色="#f1c40f";
+        var 红方头像边框颜色="#e74c3c";
+        var 蓝方头像边框颜色="#e74c3c";
+        var 红方血条颜色="#e74c3c";
+        var 蓝方血条颜色="#e74c3c";
+        var 红方兵线颜色="#e74c3c";
+        var 蓝方兵线颜色="#e74c3c";
+        var 野怪满CD时间=[0,60,70,90,120,240];
+        const 防御塔 = new Image();
+        防御塔.src = "防御塔.png";
+        const 回城 = new Image();
+        回城.src = "回城.png";
+        var 英雄信息=[];
+        
+        function showThisFunction(){
+            showThisData=showThisData==1?0:1;
+            showThis.textContent=showThisData==1?"显示":"显示";
+        }
+        
+        // 英雄ID
+        const imagePaths = ["545","162","187","142","191","179","141","190","564","112","130","194","515","125","527","157","124","508","505","129","149","156","144","126","504","175","119","513","506","170","540","109","177","511","136","544","116","110","166","514","537","118","182","524","152","132","196","525","523","174","531","509","503","184","178","137","534","134","150","171","146","192","133","168","183","538","507","117","111","528","548","169","139","131","193","199","113","198","536","140","153","106","127","148","114","155","135","108","115","521","529","501","163","533","173","542","180","128","518","121","195","197","154","510","107","502","105","176","123","167","522","312","120","189","186","159","563","151","225","550","582","581","577","584","585","519","517","620","621","172","558"];
+const 防御塔图片Paths = ["5", "10", "20", "30", "40", "50", "60", "70", "80", "90", "100"];
+
+        const images = imagePaths.map(path => {
+            const image = new Image();
+            image.src = "https://game.gtimg.cn/images/yxzj/img201606/heroimg/"+path+"/"+path+".jpg";
+            return image;
+        });
+
+        const 蓝方防御塔 = 防御塔图片Paths.map(path => {
+            const image = new Image();
+            image.src = "蓝方防御塔"+path+".png";
+            return image;
+        });
+        const 红方防御塔 = 防御塔图片Paths.map(path => {
+            const image = new Image();
+            image.src = "红方防御塔"+path+".png";
+            return image;
+        });
+        
+        for (const key in 防御塔图片Paths) {
+            const imagePath = 防御塔图片Paths[key];
+            const image = new Image();
+            image.src = "蓝方防御塔"+imagePath+".png";
+            蓝方防御塔[imagePath] = image;
+            const image2 = new Image();
+            image2.src = "红方防御塔"+imagePath+".png";
+            红方防御塔[imagePath] = image2;
+        }
+
+        for (const key in imagePaths) {
+            const imagePath = imagePaths[key];
+            const image = new Image();
+            image.src = "https://game.gtimg.cn/images/yxzj/img201606/heroimg/"+imagePath+"/"+imagePath+".jpg";
+            images[imagePath] = image;
+        }
+        
+        function mapX(x) {
+    return Number(x) * scaleX;
+}
+
+function mapY(y) {
+    return Number(y) * scaleY;
+}
+        
+        function clearCanvas() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+        }
+        
+        
+        
+        function drawFilledCircle(x, y, radius, zy) {
+            x=Number(x);
+            y=Number(y);
+            zy = Number(zy);
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI * 2);
+            context.fillStyle = zy === 1 ? 蓝方兵线颜色:红方兵线颜色;
+            context.fill();
+            context.closePath();
+        }
+     //修改   
+function drawText(x, y, text) {
+    x = Number(x);
+    y = Number(y);
+    var 野怪cd = Number(text);
+
+    // 判断野怪cd是否为满或超过130
+    野怪满CD时间.forEach(cd => {
+        if (cd == Number(text)) {
+            野怪cd = 0;
+        }
+    });
+
+    
+
+    // 如果野怪cd大于100，什么都不绘制
+    if (野怪cd > 100) {
+        return;
+    }
+
+    // 绘制圆形或文本
+    if (0 == 野怪cd) {
+        context.beginPath();
+        context.arc(x, y, 4, 0, Math.PI * 2);
+        context.fillStyle = 野怪颜色;
+        context.fill();
+        context.closePath();
+    } else {
+        context.font = "12px Arial";
+        context.fillStyle = 野怪颜色;
+        context.fillText(野怪cd, x, y);
+    }
+}
+        //修改
+// 绘制英雄头像时，检查是否死亡
+function drawImageAtPosition(cx, cy, image, width, height, zy, hc, hp) {
+    cx = Number(cx);
+    cy = Number(cy);
+    zy = Number(zy);
+
+    if (!image || !image.complete || image.naturalWidth === 0) {
+        return;
+    }
+
+    // === 1️⃣ 把中心点 → 左上角 ===
+    let x = cx - width / 2;
+    let y = cy - height / 2;
+
+    // === 2️⃣ 四边界 clamp（关键） ===
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
+
+    if (x + width > canvas.width) {
+        x = canvas.width - width;
+    }
+    if (y + height > canvas.height) {
+        y = canvas.height - height;
+    }
+
+    context.save();
+
+    const radius = Math.min(width, height) / 2 - 2;
+
+    context.beginPath();
+    context.arc(x + width / 2, y + height / 2, radius, 0, Math.PI * 2);
+    context.clip();
+
+    context.drawImage(image, x, y, width, height);
+
+    context.beginPath();
+    context.arc(x + width / 2, y + height / 2, radius, 0, Math.PI * 2);
+    context.strokeStyle = zy === 1 ? 蓝方头像边框颜色 : 红方头像边框颜色;
+    context.lineWidth = 7;
+    context.stroke();
+
+    context.restore();
+}
+
+// 清除英雄头像区域
+
+
+// 绘制血条时的优化
+function drawHP(cx, cy, hp, zy) {
+    hp = Number(hp);
+    zy = Number(zy);
+
+    if (hp <= 0) return;
+
+    const barWidth = 40 * scaleX;
+    const barHeight = 5;
+
+    // === 血条默认在头像下方 ===
+    let x = cx - barWidth / 2;
+    let y = cy + 30 * scaleY;
+
+    // === 上下边界调整 ===
+    if (y + barHeight > canvas.height) {
+        y = cy - 30 * scaleY;
+    }
+    if (y < 0) {
+        y = 0;
+    }
+
+    // === 左右边界 clamp（关键） ===
+    if (x < 0) x = 0;
+    if (x + barWidth > canvas.width) {
+        x = canvas.width - barWidth;
+    }
+
+    const hpWidth = (hp / 100) * barWidth;
+
+    // 背景
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + barWidth, y);
+    context.strokeStyle = 血条背景颜色;
+    context.lineWidth = barHeight;
+    context.stroke();
+
+    // 当前血量
+    context.beginPath();
+    context.moveTo(x, y);
+    context.lineTo(x + hpWidth, y);
+    context.strokeStyle = zy === 1 ? 蓝方血条颜色 : 红方血条颜色;
+    context.lineWidth = barHeight;
+    context.stroke();
+}
+        
+        function 绘制防御塔(x, y, hp, zy , width, height) {
+            x = Number(x);
+            y = Number(y);
+            hp = Number(hp);
+            if(0<hp){
+                zy = Number(zy);
+                context.save();
+                const radius = Math.max(width, height) / 2 - 2;
+                context.beginPath();
+                context.arc(x + width / 2, y + height / 2, radius, 0, Math.PI * 2);
+                context.clip();
+                context.drawImage(防御塔, x, y, width, height);
+                context.beginPath();
+                context.arc(x + width / 2, y + height / 2, radius, 0, Math.PI * 2);
+                context.clip();
+                var index=100;
+                if(100==hp){
+                    index=100;
+                }else if(89<hp && 100>hp){
+                    index=90;
+                }else if(79<hp && 90>hp){
+                    index=80;
+                }else if(69<hp && 80>hp){
+                    index=70;
+                }else if(59<hp && 70>hp){
+                    index=60;
+                }else if(49<hp && 60>hp){
+                    index=50;
+                }else if(39<hp && 50>hp){
+                    index=40;
+                }else if(29<hp && 40>hp){
+                    index=30;
+                }else if(19<hp && 30>hp){
+                    index=20;
+                }else if(9<hp && 20>hp){
+                    index=10;
+                }else if(10>hp){
+                    index=5;
+                }
+                
+                if(1==zy){
+                    context.drawImage(蓝方防御塔[index], x, y, width, height);
+                }else{
+                    context.drawImage(红方防御塔[index], x, y, width, height);
+                }
+                context.restore();
+            }
+        }
+
+        if(window.WebSocket){
+            socket = new WebSocket("ws://"+ip+"/ws");
+
+            socket.onmessage = function (event) {
+                 var datas = event.data.split("##");
+                 if("homeData"===datas[0]){
+                    datas = datas[1].split(",");
+                    var listHtml='';
+                    if(0<datas.length&&""!=datas){
+                        datas.forEach((buttonName,index) => {
+                            listHtml += `
+                                <div class="room-item ${buttonName==homeId?'active':''}" onclick="buttonClicked('${buttonName}')">
+                                    <div class="room-name">${buttonName}</div>
+                                </div>
+                            `;
+                        });
+                    }else{
+                         listHtml += `
+                            <div class="room-item">
+                                <div class="room-name">暂时没人开启共享</div>
+                            </div>
+                        `;
+                    }
+                    homeList.innerHTML = listHtml;
+                    homeText.textContent = homeId==''?"未连接房间":"已连接: "+homeId;
+                 }else if("gameData"===datas[0]){
+                    clearCanvas();
+                    datas = datas[1].split("---");
+                    
+                    ygData = datas[1].split("==");
+                    ygData.forEach(ygAll => {
+                        var yg = ygAll.split(",");
+                        drawText(
+    mapX(yg[3]),
+    mapY(yg[4]),
+    yg[1]
+);
+                    });
+
+                    bxData = datas[2].split("==");
+                    bxData.forEach(bxAll => {
+                        var bx = bxAll.split(",");
+                        drawFilledCircle(
+    mapX(bx[0]),
+    mapY(bx[1]),
+    4 * scaleX,
+    bx[2]
+);
+                    });
+                    
+                    rwData = datas[0].split("==");
+                    英雄信息=rwData;
+                  rwData.forEach(rwAll => {
+    var rw = rwAll.split(",");
+    if ("" != rw[0]) {    
+        var hp = Number(rw[7]); // 获取当前英雄的血量
+        if (hp > 0) {  // 只有当血量大于 0 时才绘制英雄
+          drawImageAtPosition(
+    mapX(rw[5]),
+    mapY(rw[6]),
+    images[rw[0]],       // ✅ 正确
+    40 * scaleX,
+    40 * scaleY,
+    rw[8],
+    1,
+    hp
+);
+
+drawHP(
+    mapX(rw[5]),
+    mapY(rw[6]),
+    rw[7],
+    rw[8]
+);
+        }
+    }
+});
+                    mapImageRotate=Number(datas[4]);
+                 }
+            }
+
+            socket.onopen = function(event){
+                getHome();
+                setInterval(getHome, 1000);
+                setInterval(getGameData, gameDataTime);
+                setInterval(刷新英雄信息, 500);
+            }
+
+            socket.onclose = function (event) {
+                homeText.textContent="与服务器断开了连接";
+            }
+        }else{
+            homeText.textContent="浏览器不支持WebSocket";
+        }
+
+        function send(message){
+            if(!window.WebSocket){
+                return;
+            }
+            if(socket.readyState == WebSocket.OPEN){
+                socket.send(message);
+            }else{
+                homeText.textContent="连接不上服务器";
+            }
+        }
+        
+        function getHome() {
+            send("getHome");
+        }
+
+        function getGameData() {
+            if(""!=homeId){
+                send("web"+timestamp+"[==]"+homeId);
+                console.log("请求游戏数据");
+            }
+        }
+        
+        function buttonClicked(buttonText) {
+            homeId=buttonText;
+            getGameData();
+        }
+        
+        function 刷新英雄信息(){
+            canvas.className=mapImageRotate==1?"rotate180":"rotate0";
+            var heroListHtml='';
+            英雄信息.forEach(rwAll => {
+                var rw = rwAll.split(",");
+                if(""!=rw[0]){    
+                    var teamClass = Number(rw[8]) === 1 ? 'blue' : 'red';
+                    var cd = Number(rw[3])>0 ? rw[3] : '就绪';
+                    var heroCd = Number(rw[4])>0 ? rw[4] : '就绪';
+                    
+                    heroListHtml += `
+                        <div class="hero-item ${teamClass}">
+                            <img src="https://game.gtimg.cn/images/yxzj/img201606/heroimg/${rw[0]}/${rw[0]}.jpg" class="hero-avatar ${teamClass}">
+                            <div class="hero-info">
+                                <div class="hero-name">英雄 ${rw[0]}</div>
+                                <div class="hero-skills">
+                                    <div class="hero-skill">大招: <span class="skill-cd">${cd}</span></div>
+                                    <div class="hero-skill">技能: <span class="skill-cd">${heroCd}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            heroList.innerHTML = heroListHtml;
+        }
+        
+        layui.use(['form'], function(){
+          var form = layui.form
+          ,layer = layui.layer
+          ,$ = layui.jquery;
+        });
+    </script>
+</html>
